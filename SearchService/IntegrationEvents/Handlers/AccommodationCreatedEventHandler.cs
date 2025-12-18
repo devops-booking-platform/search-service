@@ -20,44 +20,57 @@ namespace SearchService.IntegrationEvents.Handlers
 
         public async Task Handle(AccommodationCreatedEvent @event, CancellationToken ct)
         {
-            var location = @event.Location is null
-            ? null
-            : new LocationDocument
-            {
-                Address = @event.Location.Address,
-                City = @event.Location.City,
-                Country = @event.Location.Country,
-                PostalCode = @event.Location.PostalCode
-            };
-            var amenities = @event.Amenities
-            .Select(a => new AmenityDocument
-            {
-                Name = a.Name,
-                Description = a.Description
-            })
-            .ToList();
+            var doc = MapToDocument(@event);
 
-            var doc = new AccommodationDocument
+            await UpsertAsync(doc, ct);
+
+            _logger.LogInformation(
+                "Upserted accommodation doc. AccommodationId={AccommodationId}",
+                @event.AccommodationId);
+        }
+
+        private static AccommodationDocument MapToDocument(AccommodationCreatedEvent @event)
+            => new()
             {
                 Id = @event.AccommodationId.ToString(),
                 Name = @event.Name,
                 MinGuests = @event.MinGuest,
                 MaxGuests = @event.MaxGuest,
-                Location = location,
-                Amenities = amenities,
+                Location = MapLocation(@event.Location),
+                Amenities = MapAmenities(@event.Amenities),
                 Availabilities = new(),
                 Reservations = new()
             };
 
+        private static LocationDocument? MapLocation(LocationDTO? location)
+            => location is null
+                ? null
+                : new LocationDocument
+                {
+                    Address = location.Address,
+                    City = location.City,
+                    Country = location.Country,
+                    PostalCode = location.PostalCode
+                };
+
+        private static List<AmenityDocument> MapAmenities(List<AmenityDTO> amenities)
+            => amenities
+                .Select(a => new AmenityDocument
+                {
+                    Name = a.Name,
+                    Description = a.Description
+                })
+                .ToList();
+
+        private Task UpsertAsync(AccommodationDocument doc, CancellationToken ct)
+        {
             var filter = Builders<AccommodationDocument>.Filter.Eq(x => x.Id, doc.Id);
 
-            await _collection.ReplaceOneAsync(
+            return _collection.ReplaceOneAsync(
                 filter,
                 doc,
                 new ReplaceOptions { IsUpsert = true },
                 ct);
-
-            _logger.LogInformation("Upserted accommodation doc. AccommodationId={AccommodationId}", @event.AccommodationId);
         }
     }
 }

@@ -15,6 +15,6 @@ namespace SearchService.Documents
         public List<AmenityDocument> Amenities { get; set; } = [];
         public List<AvailabilityDocument> Availabilities { get; set; } = [];
         public List<ReservationDocument> Reservations { get; set; } = [];
-        public LocationDocument Location { get; set; } = null!;
+        public LocationDocument? Location { get; set; } = null!;
     }
 }
