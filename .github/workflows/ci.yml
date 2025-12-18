@@ -9,3 +9,28 @@ on:
     branches:
       - develop
       - main
+env:
+  DOTNET_VERSION: "8.0.x"
+  SOLUTION_PATH: "./SearchService.sln"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_PATH }} --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-restore --no-build --verbosity normal
