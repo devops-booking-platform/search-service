@@ -8,8 +8,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpass
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
       - mongo_data:/data/db
     networks:
@@ -22,10 +22,10 @@ services:
     ports:
       - "8081:8081"
     environment:
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: admin
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: rootpass
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
       ME_CONFIG_MONGODB_SERVER: mongo
       ME_CONFIG_MONGODB_AUTH_DATABASE: admin
     depends_on:
@@ -41,17 +41,17 @@ services:
     ports:
       - "5005:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      ASPNETCORE_ENVIRONMENT: Development
 
-      - Mongo__ConnectionString=mongodb://root:rootpass@mongo:27017
-      - Mongo__Database=SearchDb
-      - Mongo__AccommodationsCollection=accommodations
+      Mongo__ConnectionString: ${MONGO_CONNECTIONSTRING}
+      Mongo__Database: ${MONGO_DATABASE}
+      Mongo__AccommodationsCollection: ${MONGO_ACCOMMODATIONS_COLLECTION}
 
-      - RabbitMq__Host=rabbitmq
-      - RabbitMq__User=guest
-      - RabbitMq__Pass=guest
-      - RabbitMq__VirtualHost=/
-      - RabbitMq__Exchange=integration
+      RabbitMq__Host: ${RABBITMQ_HOST}
+      RabbitMq__User: ${RABBITMQ_USER}
+      RabbitMq__Pass: ${RABBITMQ_PASS}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST}
+      RabbitMq__Exchange: ${RABBITMQ_EXCHANGE}
     depends_on:
       - mongo
     networks:
