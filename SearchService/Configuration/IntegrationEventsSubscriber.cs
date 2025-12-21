@@ -2,6 +2,7 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using SearchService.Common.Events;
+using SearchService.Common.Events.Received;
 using SearchService.Configuration;
 using System.Text;
 
@@ -58,11 +59,11 @@ public sealed class IntegrationEventsSubscriber : BackgroundService
 
         await _channel.BasicQosAsync(0, prefetchCount: 1, global: false, cancellationToken: stoppingToken);
 
-        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(AccommodationCreatedEvent), cancellationToken: stoppingToken);
-        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(AccommodationDeletedEvent), cancellationToken: stoppingToken);
-        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(ReservationApprovedEvent), cancellationToken: stoppingToken);
-        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(ReservationCanceledEvent), cancellationToken: stoppingToken);
-        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(AvailabilityCreatedEvent), cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(AccommodationCreatedIntegrationEvent), cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(ReservationApprovedIntegrationEvent), cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(ReservationCanceledIntegrationEvent), cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(AvailabilityUpsertedIntegrationEvent), cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync(QueueName, _settings.Exchange, nameof(HostAccommodationsDeletedIntegrationEvent), cancellationToken: stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
         consumer.ReceivedAsync += OnMessage;

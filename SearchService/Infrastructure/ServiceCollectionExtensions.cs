@@ -1,4 +1,5 @@
 ﻿using SearchService.Common.Events;
+using SearchService.Common.Events.Received;
 using SearchService.IntegrationEvents.Handlers;
 
 namespace SearchService.Infrastructure
@@ -8,16 +9,18 @@ namespace SearchService.Infrastructure
         public static IServiceCollection AddSearchServiceDependencies(this IServiceCollection services)
         {
             services.AddScoped<IIntegrationEventDispatcher, IntegrationEventDispatcher>();
-            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<AccommodationCreatedEvent>>();
-            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<AccommodationDeletedEvent>>();
-            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<AvailabilityCreatedEvent>>();
-            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<ReservationApprovedEvent>>();
-            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<ReservationCanceledEvent>>();
-            services.AddScoped<IIntegrationEventHandler<AccommodationCreatedEvent>, AccommodationCreatedEventHandler>();
-            services.AddScoped<IIntegrationEventHandler<AccommodationDeletedEvent>, AccommodationDeletedEventHandler>();
-            services.AddScoped<IIntegrationEventHandler<AvailabilityCreatedEvent>, AvailabilityCreatedEventHandler>();
-            services.AddScoped<IIntegrationEventHandler<ReservationApprovedEvent>, ReservationApprovedEventHandler>();
-            services.AddScoped<IIntegrationEventHandler<ReservationCanceledEvent>, ReservationCanceledEventHandler>();
+            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<AccommodationCreatedIntegrationEvent>>();
+            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<AvailabilityUpsertedIntegrationEvent>>();
+            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<ReservationApprovedIntegrationEvent>>();
+            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<ReservationCanceledIntegrationEvent>>();
+            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<HostAccommodationsDeletedIntegrationEvent>>();
+
+            services.AddScoped<IIntegrationEventHandler<AccommodationCreatedIntegrationEvent>, AccommodationCreatedIntegrationEventHandler>();
+            services.AddScoped<IIntegrationEventHandler<AvailabilityUpsertedIntegrationEvent>, AvailabilityUpsertedIntegrationEventHandler>();
+            services.AddScoped<IIntegrationEventHandler<ReservationApprovedIntegrationEvent>, ReservationApprovedIntegrationEventHandler>();
+            services.AddScoped<IIntegrationEventHandler<ReservationCanceledIntegrationEvent>, ReservationCanceledIntegrationEventHandler>();
+            services.AddScoped<IIntegrationEventHandler<HostAccommodationsDeletedIntegrationEvent>, HostAccommodationsDeletedIntegrationEventHandler>();
+
             services.AddHostedService<IntegrationEventsSubscriber>();
             return services;
         }

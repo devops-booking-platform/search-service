@@ -1,8 +1,13 @@
-﻿namespace SearchService.Documents
+﻿using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
+
+namespace SearchService.Documents
 {
     public class ReservationDocument
     {
-        DateTimeOffset StartDate { get; set; }
-        DateTimeOffset EndDate { get; set; }
+        [BsonRepresentation(BsonType.String)]
+        public Guid Id { get; set; }
+        public DateTimeOffset StartDate { get; set; }
+        public DateTimeOffset EndDate { get; set; }
     }
 }
