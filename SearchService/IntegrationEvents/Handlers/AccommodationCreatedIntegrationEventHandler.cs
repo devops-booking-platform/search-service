@@ -1,25 +1,26 @@
 ﻿using MongoDB.Driver;
 using SearchService.Common.Events;
+using SearchService.Common.Events.Received;
 using SearchService.Documents;
 using SearchService.DTO;
 
 namespace SearchService.IntegrationEvents.Handlers;
 
-public class AccommodationCreatedEventHandler
-    : IIntegrationEventHandler<AccommodationCreatedEvent>
+public class AccommodationCreatedIntegrationEventHandler
+    : IIntegrationEventHandler<AccommodationCreatedIntegrationEvent>
 {
     private readonly IMongoCollection<AccommodationDocument> _collection;
-    private readonly ILogger<AccommodationCreatedEventHandler> _logger;
+    private readonly ILogger<AccommodationCreatedIntegrationEventHandler> _logger;
 
-    public AccommodationCreatedEventHandler(
+    public AccommodationCreatedIntegrationEventHandler(
         IMongoCollection<AccommodationDocument> collection,
-        ILogger<AccommodationCreatedEventHandler> logger)
+        ILogger<AccommodationCreatedIntegrationEventHandler> logger)
     {
         _collection = collection;
         _logger = logger;
     }
 
-    public async Task Handle(AccommodationCreatedEvent @event, CancellationToken ct)
+    public async Task Handle(AccommodationCreatedIntegrationEvent @event, CancellationToken ct)
     {
         var doc = MapToDocument(@event);
 
@@ -30,10 +31,10 @@ public class AccommodationCreatedEventHandler
             @event.AccommodationId);
     }
 
-    private static AccommodationDocument MapToDocument(AccommodationCreatedEvent @event)
+    private static AccommodationDocument MapToDocument(AccommodationCreatedIntegrationEvent @event)
         => new()
         {
-            Id = @event.AccommodationId.ToString(),
+            Id = @event.AccommodationId,
             Name = @event.Name,
             MinGuests = @event.MinGuest,
             MaxGuests = @event.MaxGuest,
