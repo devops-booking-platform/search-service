@@ -33,8 +33,20 @@ builder.Services.AddSingleton<IMongoCollection<AccommodationDocument>>(sp =>
 
 builder.Services.AddControllers();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowOrigins", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
-
+app.UseCors("AllowOrigins");
 app.MapControllers();
 app.Run();
