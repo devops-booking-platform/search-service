@@ -1,6 +1,7 @@
 ﻿using SearchService.Common.Events;
 using SearchService.Common.Events.Received;
 using SearchService.IntegrationEvents.Handlers;
+using SearchService.Services.Interfaces;
 
 namespace SearchService.Infrastructure
 {
@@ -20,7 +21,7 @@ namespace SearchService.Infrastructure
             services.AddScoped<IIntegrationEventHandler<ReservationApprovedIntegrationEvent>, ReservationApprovedIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<ReservationCanceledIntegrationEvent>, ReservationCanceledIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<HostAccommodationsDeletedIntegrationEvent>, HostAccommodationsDeletedIntegrationEventHandler>();
-
+            services.AddScoped<ISearchService, SearchService.Services.SearchService>();
             services.AddHostedService<IntegrationEventsSubscriber>();
             return services;
         }

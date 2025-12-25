@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using SearchService.Configuration;
 using SearchService.Documents;
 using SearchService.Infrastructure;
+using SearchService.Infrastructure.ErrorHandling;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,9 @@ builder.Services.AddSingleton<IMongoCollection<AccommodationDocument>>(sp =>
 
 builder.Services.AddControllers();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowOrigins", policy =>
@@ -44,9 +48,19 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
-
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+app.UseExceptionHandler();
+
 app.UseCors("AllowOrigins");
+
 app.MapControllers();
+
 app.Run();

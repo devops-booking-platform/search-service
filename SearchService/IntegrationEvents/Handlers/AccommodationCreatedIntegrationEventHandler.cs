@@ -36,6 +36,7 @@ public class AccommodationCreatedIntegrationEventHandler
         {
             Id = @event.AccommodationId,
             Name = @event.Name,
+            PriceType = @event.PriceType,
             MinGuests = @event.MinGuest,
             MaxGuests = @event.MaxGuest,
             Location = MapLocation(@event.Location),
