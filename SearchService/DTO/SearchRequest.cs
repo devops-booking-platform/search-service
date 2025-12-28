@@ -2,7 +2,7 @@
 
 namespace SearchService.DTO
 {
-    public sealed class SearchRequest
+    public sealed class SearchRequest : PagedRequest
     {
         public string? City { get; init; }
         public string? Country { get; init; }
@@ -11,9 +11,9 @@ namespace SearchService.DTO
         public int Guests { get; init; }
 
         [Required]
-        public DateTimeOffset? Start { get; init; }
+        public DateOnly Start { get; init; }
 
         [Required]
-        public DateTimeOffset? End { get; init; }
+        public DateOnly End { get; init; }
     }
 }

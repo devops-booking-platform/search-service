@@ -4,12 +4,6 @@ namespace SearchService.Services.Interfaces
 {
     public interface ISearchService
     {
-        Task<IReadOnlyList<SearchResultItem>> SearchAsync(
-            string? city,
-            string? country,
-            int guests,
-            DateTimeOffset start,
-            DateTimeOffset end,
-            CancellationToken ct);
+        Task<PagedResult<SearchResultItem>> SearchAsync(SearchRequest request, CancellationToken ct);
     }
 }
