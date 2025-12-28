@@ -1,4 +1,11 @@
 ﻿namespace SearchService.Common.Events.Received
 {
-    public record ReservationCanceledIntegrationEvent(Guid AccommodationId, Guid ReservationId) : IIntegrationEvent;
+    public record ReservationCanceledIntegrationEvent(
+    Guid HostId,
+    Guid ReservationId,
+    Guid AccommodationId,
+    string AccommodationName,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    string GuestUsername) : IIntegrationEvent;
 }

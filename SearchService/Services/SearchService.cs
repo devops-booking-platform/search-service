@@ -1,8 +1,10 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
 using SearchService.Documents;
 using SearchService.DTO;
 using SearchService.Enums;
 using SearchService.Services.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace SearchService.Services
 {
@@ -13,57 +15,79 @@ namespace SearchService.Services
         {
             _collection = collection;
         }
-        public async Task<IReadOnlyList<SearchResultItem>> SearchAsync(
-            string? city,
-            string? country,
-            int guests,
-            DateTimeOffset start,
-            DateTimeOffset end,
+        public async Task<PagedResult<SearchResultItem>> SearchAsync(
+            SearchRequest request,
             CancellationToken ct)
         {
-            if (guests <= 0)
-                throw new ArgumentOutOfRangeException(nameof(guests), "Number of guests can not be 0.");
+            if (request.Page <= 0) throw new ArgumentOutOfRangeException(nameof(request.Page));
 
-            if (start >= end)
-                throw new ArgumentOutOfRangeException(nameof(end), "End date must be after start.");
+            if (request.PageSize <= 0) throw new ArgumentOutOfRangeException(nameof(request.PageSize));
 
-            var (startDay, endDay) = NormalizeToNightsUtc(start, end);
+            if (request.Guests <= 0)
+                throw new ArgumentOutOfRangeException(nameof(request.Guests), "Number of guests can not be 0.");
 
-            var startMidnightUtc = new DateTimeOffset(startDay.Year, startDay.Month, startDay.Day, 0, 0, 0, TimeSpan.Zero);
-            var endMidnightUtc = new DateTimeOffset(endDay.Year, endDay.Month, endDay.Day, 0, 0, 0, TimeSpan.Zero);
+            if (request.Start >= request.End)
+                throw new ArgumentOutOfRangeException(nameof(request.End), "End date must be after start.");
 
-            var filter = BuildFilter(city, country, guests, startMidnightUtc, endMidnightUtc);
+            var filter = BuildFilter(request.City, request.Country, request.Guests, request.Start, request.End);
 
-            var docs = await _collection.Find(filter).ToListAsync(ct);
-            var results = new List<SearchResultItem>();
+            var sortDocs = Builders<AccommodationDocument>.Sort.Ascending(x => x.Name).Ascending(x => x.Id);
+            var docs = await _collection.Find(filter)
+                .Sort(sortDocs)
+                .ToListAsync(ct);
+
+            var results = new List<SearchResultItem>(docs.Count);
             foreach (var d in docs)
             {
                 try
                 {
-                    results.Add(MapToResult(d, guests, startMidnightUtc, endMidnightUtc));
+                    results.Add(MapToResult(d, request.Guests, request.Start, request.End));
                 }
                 catch (InvalidOperationException)
                 {
                 }
             }
-            return results;
+            var totalCount = results.Count;
+
+            var skip = (request.Page - 1) * request.PageSize;
+
+            var pageItems = results
+                .Skip(skip)
+                .Take(request.PageSize)
+                .ToList();
+
+            return new PagedResult<SearchResultItem>
+            {
+                Items = pageItems,
+                TotalCount = totalCount,
+                Page = request.Page,
+                PageSize = request.PageSize
+            };
         }
 
         private static FilterDefinition<AccommodationDocument> BuildFilter(
            string? city,
            string? country,
            int guests,
-           DateTimeOffset start,
-           DateTimeOffset end)
+           DateOnly start,
+           DateOnly end)
         {
             var fb = Builders<AccommodationDocument>.Filter;
             var filter = fb.Empty;
 
             if (!string.IsNullOrWhiteSpace(city))
-                filter &= fb.Eq("Location.City", city.Trim());
+            {
+                var trimmedCity = city.Trim();
+                filter &= fb.Regex("Location.City",
+                    new BsonRegularExpression($"^{Regex.Escape(trimmedCity)}$", "i"));
+            }
 
             if (!string.IsNullOrWhiteSpace(country))
-                filter &= fb.Eq("Location.Country", country.Trim());
+            {
+                var trimmedCountry = country.Trim();
+                filter &= fb.Regex("Location.Country",
+                    new BsonRegularExpression($"^{Regex.Escape(trimmedCountry)}$", "i"));
+            }
 
             filter &= fb.Lte(x => x.MinGuests, guests) & fb.Gte(x => x.MaxGuests, guests);
 
@@ -76,25 +100,6 @@ namespace SearchService.Services
             return filter;
         }
 
-        private static (DateOnly StartDay, DateOnly EndDay) NormalizeToNightsUtc(
-            DateTimeOffset start,
-            DateTimeOffset end)
-        {
-            var startUtc = start.ToUniversalTime();
-            var endUtc = end.ToUniversalTime();
-
-            var startMidnightUtc = new DateTimeOffset(startUtc.Year, startUtc.Month, startUtc.Day, 0, 0, 0, TimeSpan.Zero);
-            var endMidnightUtc = new DateTimeOffset(endUtc.Year, endUtc.Month, endUtc.Day, 0, 0, 0, TimeSpan.Zero);
-
-            var startDay = DateOnly.FromDateTime(startMidnightUtc.UtcDateTime);
-            var endDay = DateOnly.FromDateTime(endMidnightUtc.UtcDateTime);
-
-            if (endDay <= startDay)
-                throw new ArgumentOutOfRangeException(nameof(end), "End date must be after start date.");
-
-            return (startDay, endDay);
-        }
-
         private static decimal CalculateTotalPriceFromDoc(
             AccommodationDocument d,
             int guests,
@@ -104,8 +109,8 @@ namespace SearchService.Services
             var dayIntervals = d.Availabilities
                 .Select(a => new
                 {
-                    StartDay = DateOnly.FromDateTime(a.StartDate.UtcDateTime),
-                    EndDay = DateOnly.FromDateTime(a.EndDate.UtcDateTime),
+                    StartDay = a.StartDate,
+                    EndDay = a.EndDate,
                     a.Price
                 })
                 .Where(a => a.EndDay > startDay && a.StartDay < endDay)
@@ -156,23 +161,21 @@ namespace SearchService.Services
         }
 
         private static SearchResultItem MapToResult(
-            AccommodationDocument d,
+            AccommodationDocument accommodation,
             int guests,
-            DateTimeOffset start,
-            DateTimeOffset end)
+            DateOnly start,
+            DateOnly end)
         {
-            var (startDay, endDay) = NormalizeToNightsUtc(start, end);
-
-            var total = CalculateTotalPriceFromDoc(d, guests, startDay, endDay);
+            var total = CalculateTotalPriceFromDoc(accommodation, guests, start, end);
 
             return new SearchResultItem(
-                AccommodationId: d.Id,
-                Name: d.Name,
-                MinGuests: d.MinGuests,
-                MaxGuests: d.MaxGuests,
-                PriceType: d.PriceType,
-                City: d.Location?.City,
-                Country: d.Location?.Country,
+                AccommodationId: accommodation.Id,
+                Name: accommodation.Name,
+                MinGuests: accommodation.MinGuests,
+                MaxGuests: accommodation.MaxGuests,
+                PriceType: accommodation.PriceType,
+                City: accommodation.Location?.City,
+                Country: accommodation.Location?.Country,
                 TotalPrice: total
             );
         }
