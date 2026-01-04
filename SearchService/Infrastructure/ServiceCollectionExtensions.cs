@@ -11,12 +11,14 @@ namespace SearchService.Infrastructure
         {
             services.AddScoped<IIntegrationEventDispatcher, IntegrationEventDispatcher>();
             services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<AccommodationCreatedIntegrationEvent>>();
+            services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<AccommodationUpdatedIntegrationEvent>>();
             services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<AvailabilityUpsertedIntegrationEvent>>();
             services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<ReservationApprovedIntegrationEvent>>();
             services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<ReservationCanceledIntegrationEvent>>();
             services.AddScoped<IRoutedIntegrationEventHandler, RoutedHandler<HostAccommodationsDeletedIntegrationEvent>>();
 
             services.AddScoped<IIntegrationEventHandler<AccommodationCreatedIntegrationEvent>, AccommodationCreatedIntegrationEventHandler>();
+            services.AddScoped<IIntegrationEventHandler<AccommodationUpdatedIntegrationEvent>, AccommodationUpdatedIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<AvailabilityUpsertedIntegrationEvent>, AvailabilityUpsertedIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<ReservationApprovedIntegrationEvent>, ReservationApprovedIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<ReservationCanceledIntegrationEvent>, ReservationCanceledIntegrationEventHandler>();

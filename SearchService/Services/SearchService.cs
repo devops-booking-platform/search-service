@@ -8,13 +8,8 @@ using System.Text.RegularExpressions;
 
 namespace SearchService.Services
 {
-    public sealed class SearchService : ISearchService
+    public sealed class SearchService(IMongoCollection<AccommodationDocument> collection) : ISearchService
     {
-        private readonly IMongoCollection<AccommodationDocument> _collection;
-        public SearchService(IMongoCollection<AccommodationDocument> collection)
-        {
-            _collection = collection;
-        }
         public async Task<PagedResult<SearchResultItem>> SearchAsync(
             SearchRequest request,
             CancellationToken ct)
@@ -32,7 +27,7 @@ namespace SearchService.Services
             var filter = BuildFilter(request.City, request.Country, request.Guests, request.Start, request.End);
 
             var sortDocs = Builders<AccommodationDocument>.Sort.Ascending(x => x.Name).Ascending(x => x.Id);
-            var docs = await _collection.Find(filter)
+            var docs = await collection.Find(filter)
                 .Sort(sortDocs)
                 .ToListAsync(ct);
 
@@ -47,6 +42,7 @@ namespace SearchService.Services
                 {
                 }
             }
+
             var totalCount = results.Count;
 
             var skip = (request.Page - 1) * request.PageSize;
@@ -66,11 +62,11 @@ namespace SearchService.Services
         }
 
         private static FilterDefinition<AccommodationDocument> BuildFilter(
-           string? city,
-           string? country,
-           int guests,
-           DateOnly start,
-           DateOnly end)
+            string? city,
+            string? country,
+            int guests,
+            DateOnly start,
+            DateOnly end)
         {
             var fb = Builders<AccommodationDocument>.Filter;
             var filter = fb.Empty;
