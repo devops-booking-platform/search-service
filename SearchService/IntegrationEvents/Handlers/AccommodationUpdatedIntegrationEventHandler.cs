@@ -56,11 +56,17 @@ public class AccommodationUpdatedIntegrationEventHandler(
             })
             .ToList();
 
-    private Task UpsertAsync(AccommodationDocument doc, CancellationToken ct)
+    private async Task UpsertAsync(AccommodationDocument doc, CancellationToken ct)
     {
         var filter = Builders<AccommodationDocument>.Filter.Eq(x => x.Id, doc.Id);
+        var existing = await collection.Find(filter).FirstOrDefaultAsync(ct);
 
-        return collection.ReplaceOneAsync(
+        if (existing is not null)
+        {
+            doc.Availabilities = existing.Availabilities;
+            doc.Reservations = existing.Reservations;
+        }
+        await collection.ReplaceOneAsync(
             filter,
             doc,
             new ReplaceOptions { IsUpsert = true },
