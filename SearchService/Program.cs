@@ -4,9 +4,13 @@ using SearchService.Configuration;
 using SearchService.Documents;
 using SearchService.Infrastructure;
 using SearchService.Infrastructure.ErrorHandling;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Host.UseSerilog((ctx, lc) => lc
+    .ReadFrom.Configuration(ctx.Configuration)
+    .Enrich.FromLogContext()
+);
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
 builder.Services.AddSearchServiceDependencies();
 
