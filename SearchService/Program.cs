@@ -21,6 +21,7 @@ var compositeTextMapPropagator = new CompositeTextMapPropagator(new TextMapPropa
     new BaggagePropagator()
 });
 Sdk.SetDefaultTextMapPropagator(compositeTextMapPropagator);
+var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpExporter:Endpoint"];
 
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing =>
@@ -33,7 +34,8 @@ builder.Services.AddOpenTelemetry()
             .AddRabbitMQInstrumentation()
             .AddOtlpExporter(o =>
             {
-                o.Endpoint = new Uri("http://jaeger:4317");
+                if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+                    o.Endpoint = new Uri(otlpEndpoint);
             });
     });
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
