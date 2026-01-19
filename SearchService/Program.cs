@@ -1,5 +1,9 @@
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using SearchService.Configuration;
 using SearchService.Documents;
 using SearchService.Infrastructure;
@@ -11,6 +15,29 @@ builder.Host.UseSerilog((ctx, lc) => lc
     .ReadFrom.Configuration(ctx.Configuration)
     .Enrich.FromLogContext()
 );
+var compositeTextMapPropagator = new CompositeTextMapPropagator(new TextMapPropagator[]
+{
+    new TraceContextPropagator(),
+    new BaggagePropagator()
+});
+Sdk.SetDefaultTextMapPropagator(compositeTextMapPropagator);
+var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpExporter:Endpoint"];
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        tracing
+            .SetResourceBuilder(
+                ResourceBuilder.CreateDefault().AddService("SearchService"))
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRabbitMQInstrumentation()
+            .AddOtlpExporter(o =>
+            {
+                if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+                    o.Endpoint = new Uri(otlpEndpoint);
+            });
+    });
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
 builder.Services.AddSearchServiceDependencies();
 
