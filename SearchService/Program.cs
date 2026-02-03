@@ -9,6 +9,7 @@ using SearchService.Documents;
 using SearchService.Infrastructure;
 using SearchService.Infrastructure.ErrorHandling;
 using Serilog;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((ctx, lc) => lc
@@ -23,6 +24,7 @@ var compositeTextMapPropagator = new CompositeTextMapPropagator(new TextMapPropa
 Sdk.SetDefaultTextMapPropagator(compositeTextMapPropagator);
 var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpExporter:Endpoint"];
 
+builder.Services.AddHealthChecks();
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing =>
     {
@@ -83,6 +85,8 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 var app = builder.Build();
 
+app.UseHttpMetrics();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -93,5 +97,5 @@ app.UseExceptionHandler();
 app.UseCors("AllowOrigins");
 
 app.MapControllers();
-
+app.MapMetrics();
 app.Run();
