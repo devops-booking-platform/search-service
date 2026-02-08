@@ -9,6 +9,8 @@ using SearchService.Documents;
 using SearchService.Infrastructure;
 using SearchService.Infrastructure.ErrorHandling;
 using Serilog;
+using Prometheus;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((ctx, lc) => lc
@@ -23,6 +25,7 @@ var compositeTextMapPropagator = new CompositeTextMapPropagator(new TextMapPropa
 Sdk.SetDefaultTextMapPropagator(compositeTextMapPropagator);
 var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpExporter:Endpoint"];
 
+builder.Services.AddHealthChecks();
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing =>
     {
@@ -42,6 +45,20 @@ builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("R
 builder.Services.AddSearchServiceDependencies();
 
 builder.Services.Configure<MongoOptions>(builder.Configuration.GetSection("Mongo"));
+builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var redisSettings = builder.Configuration.GetSection("Redis").Get<RedisSettings>();
+    var options = new ConfigurationOptions
+    {
+        EndPoints = { $"{redisSettings!.Host}:{redisSettings.Port}" },
+        Password = redisSettings.Password,
+        AbortOnConnectFail = false
+    };
+
+    return ConnectionMultiplexer.Connect(options);
+});
 
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
@@ -83,6 +100,9 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 var app = builder.Build();
 
+app.UseMiddleware<VisitorTrackingMiddleware>();
+app.UseHttpMetrics();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -93,5 +113,5 @@ app.UseExceptionHandler();
 app.UseCors("AllowOrigins");
 
 app.MapControllers();
-
+app.MapMetrics();
 app.Run();
