@@ -10,5 +10,6 @@ namespace SearchService.DTO
     PriceType PriceType,
     string? City,
     string? Country,
-    decimal TotalPrice);
+    decimal TotalPrice,
+    decimal Price);
 }

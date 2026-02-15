@@ -164,6 +164,12 @@ namespace SearchService.Services
         {
             var total = CalculateTotalPriceFromDoc(accommodation, guests, start, end);
 
+            var nights = end.DayNumber - start.DayNumber;
+            if (nights <= 0)
+                throw new InvalidOperationException("Invalid date range.");
+
+            var pricePerUnitPerNight = total / nights;
+            var pricePerPersonPerNight = pricePerUnitPerNight / guests;
             return new SearchResultItem(
                 AccommodationId: accommodation.Id,
                 Name: accommodation.Name,
@@ -172,7 +178,10 @@ namespace SearchService.Services
                 PriceType: accommodation.PriceType,
                 City: accommodation.Location?.City,
                 Country: accommodation.Location?.Country,
-                TotalPrice: total
+                TotalPrice: total,
+                Price: accommodation.PriceType == PriceType.PerUnit
+                    ? pricePerUnitPerNight
+                    : pricePerPersonPerNight
             );
         }
     }
