@@ -168,12 +168,8 @@ namespace SearchService.Services
             if (nights <= 0)
                 throw new InvalidOperationException("Invalid date range.");
 
-            var pricePerNight = total / nights;
-
-            decimal? pricePerGuestPerNight =
-                accommodation.PriceType == PriceType.PerGuest
-                    ? pricePerNight / guests
-                    : null;
+            var pricePerUnitPerNight = total / nights;
+            var pricePerPersonPerNight = pricePerUnitPerNight / guests;
             return new SearchResultItem(
                 AccommodationId: accommodation.Id,
                 Name: accommodation.Name,
@@ -184,8 +180,8 @@ namespace SearchService.Services
                 Country: accommodation.Location?.Country,
                 TotalPrice: total,
                 Price: accommodation.PriceType == PriceType.PerUnit
-                    ? pricePerNight
-                    : pricePerGuestPerNight ?? decimal.Zero
+                    ? pricePerUnitPerNight
+                    : pricePerPersonPerNight
             );
         }
     }
