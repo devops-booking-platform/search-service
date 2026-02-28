@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: search-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - shared-net
+
+  mongo-express:
+    image: mongo-express:1
+    container_name: mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+    depends_on:
+      - mongo
+    networks:
+      - shared-net
+
+  search-service:
+    build:
+      context: ./SearchService
+      dockerfile: Dockerfile
+    container_name: search-service
+    ports:
+      - "5005:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+      Mongo__ConnectionString: ${MONGO_CONNECTIONSTRING}
+      Mongo__Database: ${MONGO_DATABASE}
+      Mongo__AccommodationsCollection: ${MONGO_ACCOMMODATIONS_COLLECTION}
+
+      RabbitMq__Host: ${RABBITMQ_HOST}
+      RabbitMq__User: ${RABBITMQ_USER}
+      RabbitMq__Pass: ${RABBITMQ_PASS}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST}
+      RabbitMq__Exchange: ${RABBITMQ_EXCHANGE}
+    depends_on:
+      - mongo
+    networks:
+      - shared-net
+
+volumes:
+  mongo_data:
+
+networks:
+  shared-net:
+    external: true
+    name: shared-net
